@@ -55,6 +55,8 @@ def Newton(F, x0, y0, eps=eps, N=N):
     else:
         raise ValueError(f"no convergence in {N} steps.")
 
-def g(x1, x2):
+def g1(x1, x2):
     return np.array([f1(x1, x2) - 0.8 , x1 - x2])
+
+x, y = Newton(g1, 0.8, 0.8)
 
