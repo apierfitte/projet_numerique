@@ -69,10 +69,19 @@ def fonction_level_curve(f, x0, y0, c, delta):
 def level_curve(f, x0, y0, delta=0.1, N=1000, eps=eps):
     res = np.empty((2, N), dtype=float)
     c = f(x0, y0)
-    for i in range(N) :
-        gradient = grad(f)(x0, y0)
-        # on se place à un nouveau point "dans le sens de grad(f)"
-        nouveau_point = np.array([x0, y0]) + delta * gradient
+    res[0][0], res[1][0] = x0, y0
+    # création du premier point
+    gradient = grad(f)(x0, y0)
+    # on se place à un nouveau point "dans la direction de grad(f)"
+    nouveau_point = np.array([x0, y0]) + delta * gradient
+    # on trouve les nouvelles coordonnées, sur le cercle de centre (x0, y0) et de rayon delta, en partant dans un sens appele "droite"
+    x , y = Newton(fonction_level_curve(f, x0, y0, c, delta), nouveau_point[0], nouveau_point[1])
+    res[0][1], res[1][1] = x, y
+    x0, y0 = x, y
+
+    for i in range(2, N) :
+        # on se place à un nouveau point
+        nouveau_point = np.array([x0, y0]) + delta * (res[:,i-1] - res[:,i-2])
         # on trouve les nouvelles coordonnées, sur le cercle de centre (x0, y0) et de rayon delta
         x , y = Newton(fonction_level_curve(f, x0, y0, c, delta), nouveau_point[0], nouveau_point[1])
         res[0][i], res[1][i] = x, y
@@ -153,23 +162,22 @@ def level_curve_question_7(f, x0, y0, delta=0.1, N=1000, eps=eps):
 
     # on calcule un nouveau point
     gradient = grad(f)(x0, y0)
-    nouveau_point = np.array([x0, y0]) + delta * gradient
+    nouveau_point = np.array([x0, y0]) + delta * (res[:,i-1] - res[:,i-2])
     x , y = Newton(fonction_level_curve(f, x0, y0, c, delta), nouveau_point[0], nouveau_point[1])
     res[0][2], res[1][2] = x, y
     bornes.append(np.array([x, y]))
-    point_prec = np.array([x,y])
     x0, y0 = x, y
 
     # puis on calcule les suivants
     for i in range(3, N) :
         gradient = grad(f)(x0, y0)
         # on se place à un nouveau point "dans le sens de grad(f)"
-        nouveau_point = np.array([x0, y0]) + delta * gradient
+        nouveau_point = np.array([x0, y0]) + delta * (res[:,i-1] - res[:,i-2])
         # on trouve les nouvelles coordonnées, sur le cercle de centre (x0, y0) et de rayon delta
         x , y = Newton(fonction_level_curve(f, x0, y0, c, delta), nouveau_point[0], nouveau_point[1])
         res[0][i], res[1][i] = x, y
         # test d'auto-intersection
-        if closed_segment_intersect(a, b, point_prec, np.array([x, y])) :
+        if closed_segment_intersect(a, b, res[:,i-1], np.array([x, y])) :
             print(f"Auto-intersection après {i} points.")
             return res[:,:i]
         point_prec = np.array([x, y])
