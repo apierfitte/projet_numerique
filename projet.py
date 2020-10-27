@@ -60,3 +60,26 @@ def g1(x1, x2):
 
 x, y = Newton(g1, 0.8, 0.8)
 
+def fonction_level_curve(f, x0, y0, c, delta):
+    def g_f(x, y):
+        return(np.array([f(x, y) - c, (x - x0)**2 + (y - y0)**2 - delta**2]))
+    return (g_f)
+
+
+def level_curve(f, x0, y0, delta=0.1, N=1000, eps=eps):
+    res = np.empty((2, N), dtype=float)
+    c = f(x0, y0)
+    for i in range(N) :
+        gradient = grad(f)(x0, y0)
+        # on se place à un nouveau point "dans le sens de grad(f)"
+        nouveau_point = np.array([x0, y0]) + delta * gradient
+        # on trouve les nouvelles coordonnées, sur le cercle de centre (x0, y0) et de rayon delta
+        x , y = Newton(fonction_level_curve(f, x0, y0, c, delta), nouveau_point[0], nouveau_point[1])
+        res[0][i], res[1][i] = x, y
+        x0, y0 = x, y
+    return res
+
+tableau = level_curve(f1, 0.5, 0.8)
+
+plt.plot(tableau[0], tableau[1])
+plt.show()
