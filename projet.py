@@ -190,6 +190,30 @@ def level_curve_question_7(f, x0, y0, delta=0.1, N=N, eps=eps):
     return res
 
 
-tableau = level_curve_question_7(f1, 0.5, 0.3, 0.1, 100)
-plt.plot(tableau[0], tableau[1])
-plt.show()
+'''
+question 8
+'''
+
+def gamma(t, P1, P2, u1, u2):
+    # on "construit" la matrice (u1, u2)
+    A = np.transpose(np.array([u1, u2]))
+    det = np.linalg.det(A)
+    if (round(det, 3)): # le déterminant n'est pas nul (on arrondit pour palier aux problèmes d'arrondis sur les flottants)
+        # on commence par assigner les valeurs de a,b,c,d,e et f
+        # peu élégant de cette manière là, certes, mais beaucoup plus lisible
+        B = np.transpose(np.array([u2, P2-P1]))
+        alpha = (2*np.linalg.det(B))/det
+        
+        a = P1[0]
+        b = alpha*u1[0]
+        c = P2[0] - P1[0] - alpha*u1[0]
+        d = P1[1]
+        e = alpha*u1[1]
+        f = P2[1] - P1[1] - alpha*u1[1]
+
+        return(np.array([a + b*t + c*(t**2), d + e*t + f*(t**2)]))
+    else : #le déterminant est nul : interpolation linéaire
+        return(np.array([(1 - t)*P1[0] + t*P2[0], (1 - t)*P1[1] + t*P2[1]]))
+
+
+# cette fonction marche pour des valeurs vectorielles de t
