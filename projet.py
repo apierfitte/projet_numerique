@@ -33,8 +33,12 @@ def f1(x1, x2):
     x2 = np.array(x2)
     return 3.0 * x1 * x1 - 2.0 * x1 * x2 + 3.0 * x2 * x2 
 
-N = 100
+def f2(x1, x2):
+    return (x1 - 1)**2 + (x1 - x2**2)**2
+
+N = 1000
 eps = 10**(-3)
+
 
 # On a, d'après la méthode de Newton :
 # x_k+1 = x_k - Jf(x_k)^-1 * f(x_k)
@@ -65,23 +69,21 @@ def fonction_level_curve(f, x0, y0, c, delta):
         return(np.array([f(x, y) - c, (x - x0)**2 + (y - y0)**2 - delta**2]))
     return (g_f)
 
+# on définit la matrice de rotation
+mat_rot = np.array(( (0, 1),
+                   (-1, 0) )) # matrice de rotation de -pi/2
 
-def level_curve(f, x0, y0, delta=0.1, N=1000, eps=eps):
+def level_curve(f, x0, y0, delta=0.1, N=N, eps=eps):
     res = np.empty((2, N), dtype=float)
     c = f(x0, y0)
     res[0][0], res[1][0] = x0, y0
     # création du premier point
-    gradient = grad(f)(x0, y0)
-    # on se place à un nouveau point "dans la direction de grad(f)"
-    nouveau_point = np.array([x0, y0]) + delta * gradient
-    # on trouve les nouvelles coordonnées, sur le cercle de centre (x0, y0) et de rayon delta, en partant dans un sens appele "droite"
-    x , y = Newton(fonction_level_curve(f, x0, y0, c, delta), nouveau_point[0], nouveau_point[1])
-    res[0][1], res[1][1] = x, y
-    x0, y0 = x, y
-
-    for i in range(2, N) :
+    for i in range(1, N) :
+        gradient = grad(f)(x0, y0)
         # on se place à un nouveau point
-        nouveau_point = np.array([x0, y0]) + delta * (res[:,i-1] - res[:,i-2])
+        u = mat_rot.dot(gradient)
+        norme_u = np.linalg.norm(u)
+        nouveau_point = np.array([x0, y0]) + (delta/norme_u) * u
         # on trouve les nouvelles coordonnées, sur le cercle de centre (x0, y0) et de rayon delta
         x , y = Newton(fonction_level_curve(f, x0, y0, c, delta), nouveau_point[0], nouveau_point[1])
         res[0][i], res[1][i] = x, y
@@ -92,7 +94,7 @@ def level_curve(f, x0, y0, delta=0.1, N=1000, eps=eps):
 # renvoie la position du point c par rapport à la droite AB
 # 1 <=> c est "au-dessus" de la droite 
 # -1 <=> c est "en-dessous"
-# a,b et c sont colinéaires
+# 0 <=> a,b et c sont colinéaires
 # a,b et c sont supposés différents
 def side(a,b,c):
     d = (c[1]-a[1])*(b[0]-a[0]) - (b[1]-a[1])*(c[0]-a[0])
@@ -101,9 +103,6 @@ def side(a,b,c):
 # renvoie True si c est à l'intérieur du segment [a, b], False sinon
 # les points a, b et c sont supposés colinéaires
 def is_point_in_closed_segment(a, b, c):
-    """ Returns True if c is inside closed segment, False otherwise.
-        a, b, c are expected to be collinear
-    """
     if a[0] < b[0]:
         return a[0] <= c[0] and c[0] <= b[0]
     if b[0] < a[0]:
@@ -146,33 +145,39 @@ def closed_segment_intersect(a,b,c,d):
     # arrivé ici, les segments s'intersectent
     return True
 
-def level_curve_question_7(f, x0, y0, delta=0.1, N=1000, eps=eps):
+def level_curve_question_7(f, x0, y0, delta=0.1, N=N, eps=eps):
     res = np.empty((2, N), dtype=float)
     c = f(x0, y0)
     # on calcule les bornes du premier segment
     bornes = []
     for i in range(2):
         gradient = grad(f)(x0, y0)
-        nouveau_point = np.array([x0, y0]) + delta * gradient
+        # On calcule le nouveau point
+        u = mat_rot.dot(gradient)
+        norme_u = np.linalg.norm(u)
+        nouveau_point = np.array([x0, y0]) + (delta/norme_u) * u
         x , y = Newton(fonction_level_curve(f, x0, y0, c, delta), nouveau_point[0], nouveau_point[1])
         res[0][i], res[1][i] = x, y
         bornes.append(np.array([x, y]))
         x0, y0 = x, y
     a, b = bornes[0], bornes[1]
 
-    # on calcule un nouveau point
+    # on calcule un troisième point
     gradient = grad(f)(x0, y0)
-    nouveau_point = np.array([x0, y0]) + delta * (res[:,i-1] - res[:,i-2])
+    u = mat_rot.dot(gradient)
+    norme_u = np.linalg.norm(u)
+    nouveau_point = np.array([x0, y0]) + (delta/norme_u) * u
     x , y = Newton(fonction_level_curve(f, x0, y0, c, delta), nouveau_point[0], nouveau_point[1])
     res[0][2], res[1][2] = x, y
-    bornes.append(np.array([x, y]))
     x0, y0 = x, y
 
     # puis on calcule les suivants
     for i in range(3, N) :
         gradient = grad(f)(x0, y0)
         # on se place à un nouveau point "dans le sens de grad(f)"
-        nouveau_point = np.array([x0, y0]) + delta * (res[:,i-1] - res[:,i-2])
+        u = mat_rot.dot(gradient)
+        norme_u = np.linalg.norm(u)
+        nouveau_point = np.array([x0, y0]) + (delta/norme_u) * u
         # on trouve les nouvelles coordonnées, sur le cercle de centre (x0, y0) et de rayon delta
         x , y = Newton(fonction_level_curve(f, x0, y0, c, delta), nouveau_point[0], nouveau_point[1])
         res[0][i], res[1][i] = x, y
@@ -184,7 +189,7 @@ def level_curve_question_7(f, x0, y0, delta=0.1, N=1000, eps=eps):
         x0, y0 = x, y
     return res
 
-tableau = level_curve_question_7(f1, 0.3, 0.1)
-print(tableau)
+
+tableau = level_curve_question_7(f1, 0.5, 0.3, 0.1, 100)
 plt.plot(tableau[0], tableau[1])
 plt.show()
