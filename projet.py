@@ -191,9 +191,6 @@ def level_curve_question_7(f, x0, y0, delta=0.1, N=N, eps=eps):
     return res
 
 
-tableau = level_curve_question_7(f1, -0.3, 0.5)
-plt.plot(tableau[0], tableau[1])
-plt.show()
 
 '''
 tache 6
@@ -223,64 +220,85 @@ def gamma(t, P1, P2, u1, u2):
 
 # cette fonction marche pour des valeurs vectorielles de t
 
-# '''
-# tache 7
-# '''
+'''
+tache 7
+'''
 
-# def level_curve_question_8(f, x0, y0,oversampling=1, delta=0.1, N=N, eps=eps):
-#     if (oversampling == 1):
-#         return(level_curve_question_7(f, x0, y0))
-#     else : # on utilise le squelette de la fonction level_curve
-#         res = np.empty((2, N*oversampling), dtype=float)
-#         c = f(x0, y0)
-#         # on calcule les bornes du premier segment
-#         bornes = []
-#         for i in range(2):
+def level_curve_question_8(f, x0, y0,oversampling=1, delta=0.1, N=N, eps=eps):
+    if (oversampling == 1):
+        return(level_curve_question_7(f, x0, y0))
+    else : # on utilise le squelette de la fonction level_curve
+        res = np.empty((2, N*oversampling), dtype=float)
+        c = f(x0, y0)
+        res[0][0], res[1][0] = x0, y0
+        # on calcule les bornes du premier segment
+        bornes = []
+        for i in range(2):
+            gradient = grad(f)(x0, y0)
+            u = mat_rot.dot(gradient)
+            norme_u = np.linalg.norm(u)
+            nouveau_point = np.array([x0, y0]) + (delta/norme_u) * u
+            x , y = Newton(fonction_level_curve(f, x0, y0, c, delta), nouveau_point[0], nouveau_point[1])
+            bornes.append(np.array([x, y]))
+            x0, y0 = x, y
+        a, b = bornes[0], bornes[1]
 
-#             gradient = grad(f)(x0, y0)
+        # on remplit res
+        res[0][0], res[1][0] = a[0], a[1]
+        interpol = interpolation(f, a, b, oversampling)
+        for i in range(1, oversampling):
+            res[0][i], res[1][i] = interpol[0][i], interpol[1][i]
+        res[0][oversampling], res[1][oversampling] = b[0], b[1]
+
+        # on calcule un troisième point
+        gradient = grad(f)(x0, y0)
+        u = mat_rot.dot(gradient)
+        norme_u = np.linalg.norm(u)
+        nouveau_point = np.array([x0, y0]) + (delta/norme_u) * u
+        x , y = Newton(fonction_level_curve(f, x0, y0, c, delta), nouveau_point[0], nouveau_point[1])
+        x0, y0 = x, y
+
+        # on remplit res
+        interpol = interpolation(f, b , np.array([x, y]), oversampling)
+        for i in range(1, oversampling):
+            res[0][i + oversampling], res[1][i + oversampling] = interpol[0][i], interpol[1][i]
+        res[0][2*oversampling], res[1][2*oversampling] = x, y
+
+        # puis on calcule les suivants
+        for k in range(3, N) :
+            gradient = grad(f)(x0, y0)
+            # on se place à un nouveau point "dans le sens de grad(f)"
+            u = mat_rot.dot(gradient)
+            norme_u = np.linalg.norm(u)
+            nouveau_point = np.array([x0, y0]) + (delta/norme_u) * u
+            # on trouve les nouvelles coordonnées, sur le cercle de centre (x0, y0) et de rayon delta
+            x , y = Newton(fonction_level_curve(f, x0, y0, c, delta), nouveau_point[0], nouveau_point[1])
             
-#             u = mat_rot.dot(gradient)
-#             norme_u = np.linalg.norm(u)
-#             nouveau_point = np.array([x0, y0]) + (delta/norme_u) * u
-#             x , y = Newton(fonction_level_curve(f, x0, y0, c, delta), nouveau_point[0], nouveau_point[1])
-#             bornes.append(np.array([x, y]))
-#             x0, y0 = x, y
-#         a, b = bornes[0], bornes[1]
+            # on remplit res comme pour l'initialisation, le point précédent est "situé" à l'indice (k-1)*oversampling
+            interpol = interpolation(f, res[:,(k-1)*oversampling], np.array([x,y]), oversampling)
+            for i in range(1, oversampling):
+                res[0][i + (k-1)*oversampling], res[1][i + (k-1)*oversampling] = interpol[0][i], interpol[1][i]
+            res[0][k*oversampling], res[1][k*oversampling] = x, y
 
-#         # on remplit res
-#         res[0][0], res[1
-#         # on calcule un troisième point
-#         gradient = grad(f)(x0, y0)
-#         u = mat_rot.dot(gradient)
-#         norme_u = np.linalg.norm(u)
-#         nouveau_point = np.array([x0, y0]) + (delta/norme_u) * u
-#         x , y = Newton(fonction_level_curve(f, x0, y0, c, delta), nouveau_point[0], nouveau_point[1])
-#         res[0][2], res[1][2] = x, y
-#         x0, y0 = x, y
+            # test d'auto-intersection
+            if closed_segment_intersect(a, b, res[:,i-1], np.array([x, y])) :
+                print(f"Auto-intersection après {i} points.")
+                return res[:,:i]
+            point_prec = np.array([x, y])
+            x0, y0 = x, y
+        return res
 
-#         # puis on calcule les suivants
-#         for i in range(3, N) :
-#             gradient = grad(f)(x0, y0)
-#             # on se place à un nouveau point "dans le sens de grad(f)"
-#             u = mat_rot.dot(gradient)
-#             norme_u = np.linalg.norm(u)
-#             nouveau_point = np.array([x0, y0]) + (delta/norme_u) * u
-#             # on trouve les nouvelles coordonnées, sur le cercle de centre (x0, y0) et de rayon delta
-#             x , y = Newton(fonction_level_curve(f, x0, y0, c, delta), nouveau_point[0], nouveau_point[1])
-#             res[0][i], res[1][i] = x, y
-#             # test d'auto-intersection
-#             if closed_segment_intersect(a, b, res[:,i-1], np.array([x, y])) :
-#                 print(f"Auto-intersection après {i} points.")
-#                 return res[:,:i]
-#             point_prec = np.array([x, y])
-#             x0, y0 = x, y
-#         return res
+'''
+la fonction suivante retourne un array de dimension (2, oversampling) avec les points d'interpolation entre a et b
+'''
+def interpolation(f, P1, P2, oversampling):
+    u1 = grad(f)(P1[0], P1[1])
+    u2 = grad(f)(P2[0], P2[1])
+    t = np.linspace(0, 1, oversampling)
+    return gamma(t, P1, P2, u1, u2)
 
-# '''
-# la fonction suivante retourne un array de dimension (2, oversampling) avec les points d'interpolation entre a et b
-# '''
-# def interpolation(f, P1, P2, oversampling):
-#     u1 = grad(f)(P1[0], P1[1])
-#     u2 = grad(f)(P2[0], P2[1])
-#     t = np.linspace(0, 1, oversampling)
-#     return gamma(t, P1, P2, u1, u2)
+tableau1 = level_curve_question_8(f2, -0.3, 0.5)
+plt.plot(tableau1[0], tableau1[1])
+tableau2 = level_curve_question_7(f2, -0.3, 0.5)
+plt.plot(tableau2[0], tableau2[1])
+plt.show()
